@@ -28,7 +28,7 @@ Open or create your global Gradle configuration file:
 
 And paste your personal GitHub username and Personal Access Token (PAT):
 ```properties
-githubPackagesUsername=your_github_username
+githubPackagesUsername=TUSHAR91316
 githubPackagesPassword=ghp_your_personal_access_token_here
 ```
 *(Note: Generate a free token with the `read:packages` scope at [GitHub Token Settings](https://github.com/settings/tokens/new?scopes=read:packages&description=ReVanced).)*
@@ -53,6 +53,9 @@ Upon a successful build, your deployable APK will be packaged at:
 ## 🖥️ 4. Emulating & Testing on Android TV 9.0
 
 We have pre-configured and registered a native **Android TV 9.0 (API 28)** virtual device on your machine to test Leanback launcher layouts and D-Pad focus traversal.
+
+### 🧩 TV Emulator x86 ABI Compatibility Note
+Standard TV emulators run on 32-bit `x86` architectures. The project's build file is configured to conditionally package `x86` native libraries **only for Debug builds** (`assembleDebug`). This ensures your release builds remain size-optimized while your local emulator testing installs seamlessly without crashing on `INSTALL_FAILED_NO_MATCHING_ABIS` errors!
 
 ### Step 1: Start the Android TV Emulator
 Execute this command in your PowerShell terminal to boot up the TV screen:
