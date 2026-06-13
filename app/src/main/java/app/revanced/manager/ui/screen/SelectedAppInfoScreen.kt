@@ -34,6 +34,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -75,6 +77,22 @@ fun SelectedAppInfoScreen(
     vm: SelectedAppInfoViewModel
 ) {
     val resources = LocalResources.current
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val isTv = remember {
+        context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_LEANBACK)
+    }
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(isTv) {
+        if (isTv) {
+            try {
+                focusRequester.requestFocus()
+            } catch (e: Exception) {
+                // ignore
+            }
+        }
+    }
+
     val networkInfo = koinInject<NetworkInfo>()
     val networkMetered = remember { !networkInfo.isUnmetered() }
 
@@ -189,6 +207,7 @@ fun SelectedAppInfoScreen(
             if (blockingError != null) return@Scaffold
 
             HapticExtendedFloatingActionButton(
+                modifier = Modifier.focusRequester(focusRequester),
                 text = { Text(stringResource(R.string.patch)) },
                 icon = {
                     Icon(

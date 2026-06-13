@@ -94,6 +94,20 @@ fun PatcherScreen(
     var showInstallPicker by rememberSaveable { mutableStateOf(false) }
     var showDismissConfirmationDialog by rememberSaveable { mutableStateOf(false) }
 
+    val isTv = remember {
+        context.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_LEANBACK)
+    }
+
+    LaunchedEffect(patcherSucceeded) {
+        if (isTv && patcherSucceeded == true && viewModel.installedPackageName == null && !viewModel.isInstalling) {
+            if (viewModel.isDeviceRooted()) {
+                showInstallPicker = true
+            } else {
+                viewModel.install(InstallType.DEFAULT)
+            }
+        }
+    }
+
     fun onPageBack() = when {
         patcherSucceeded == null -> showDismissConfirmationDialog = true
         viewModel.isInstalling -> context.toast(resources.getString(R.string.patcher_install_in_progress))
