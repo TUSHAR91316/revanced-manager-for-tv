@@ -14,12 +14,17 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -27,6 +32,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
@@ -293,106 +299,128 @@ fun DashboardScreen(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.surface
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(statusBarHeight + 96.dp)
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                                Color.Transparent
-                            )
-                        )
-                    )
-            )
+        val isTv = remember {
+            androidContext.packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_LEANBACK)
+        }
 
-            val navBarHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-            if (navBarHeight > 0.dp) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(navBarHeight)
-                        .align(Alignment.BottomCenter)
-                        .background(
-                            brush = Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Transparent,
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)
-                                )
-                            )
-                        )
+        Row(modifier = Modifier.fillMaxSize()) {
+            if (isTv) {
+                TvNavigationRail(
+                    pagerState = pagerState,
+                    hasUpdate = hasUpdate,
+                    unreadAnnouncement = vm.unreadAnnouncement != null,
+                    onSettingsClick = onSettingsClick,
+                    onAnnouncementsClick = onAnnouncementsClick,
+                    onUpdateClick = onUpdateClick,
+                    logoPainter = logoPainter,
+                    composableScope = composableScope
                 )
             }
 
-            Scaffold(
-                topBar = {
-                    TopAppBar(
-                        title = {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Image(
-                                    painter = logoPainter,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(32.dp)
-                                )
-                                Text(stringResource(R.string.app_name))
-                            }
-                        },
-                        actions = {
-                            if (hasUpdate) {
-                                TooltipIconButton(
-                                    onClick = onUpdateClick,
-                                    tooltip = stringResource(R.string.update),
-                                ) { contentDescription ->
-                                    BadgedBox(badge = { Badge(modifier = Modifier.size(6.dp)) }) {
-                                        Icon(Icons.Filled.Update, contentDescription)
-                                    }
-                                }
-                            }
-                            TooltipIconButton(
-                                onClick = onAnnouncementsClick,
-                                tooltip = stringResource(R.string.announcements),
-                            ) { contentDescription ->
-                                BadgedBox(
-                                    badge = {
-                                        if (vm.unreadAnnouncement != null) {
-                                            Badge(modifier = Modifier.size(6.dp))
-                                        }
-                                    }
-                                ) {
-                                    Icon(
-                                        Icons.Filled.Notifications,
-                                        contentDescription
+            Box(modifier = Modifier.weight(1f)) {
+                if (!isTv) {
+                    val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(statusBarHeight + 96.dp)
+                            .background(
+                                brush = Brush.verticalGradient(
+                                    colors = listOf(
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                        Color.Transparent
                                     )
+                                )
+                            )
+                    )
+                }
+
+                val navBarHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                if (!isTv && navBarHeight > 0.dp) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(navBarHeight)
+                            .align(Alignment.BottomCenter)
+                            .background(
+                                brush = Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.Transparent,
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)
+                                    )
+                                )
+                            )
+                    )
+                }
+
+                Scaffold(
+                topBar = {
+                    if (!isTv) {
+                        TopAppBar(
+                            title = {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Image(
+                                        painter = logoPainter,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(32.dp)
+                                    )
+                                    Text(stringResource(R.string.app_name))
                                 }
-                            }
-                            TooltipIconButton(
-                                onClick = onSettingsClick,
-                                tooltip = stringResource(R.string.settings),
-                            ) { contentDescription ->
-                                BadgedBox(
-                                    badge = {
-                                        if (safeguardsToggled) {
-                                            Badge(
-                                                modifier = Modifier.size(6.dp),
-                                                containerColor = MaterialTheme.colorScheme.error
-                                            )
+                            },
+                            actions = {
+                                if (hasUpdate) {
+                                    TooltipIconButton(
+                                        onClick = onUpdateClick,
+                                        tooltip = stringResource(R.string.update),
+                                    ) { contentDescription ->
+                                        BadgedBox(badge = { Badge(modifier = Modifier.size(6.dp)) }) {
+                                            Icon(Icons.Filled.Update, contentDescription)
                                         }
                                     }
-                                ) {
-                                    Icon(Icons.Filled.Settings, contentDescription)
                                 }
-                            }
-                        },
-                        colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = Color.Transparent
+                                TooltipIconButton(
+                                    onClick = onAnnouncementsClick,
+                                    tooltip = stringResource(R.string.announcements),
+                                ) { contentDescription ->
+                                    BadgedBox(
+                                        badge = {
+                                            if (vm.unreadAnnouncement != null) {
+                                                Badge(modifier = Modifier.size(6.dp))
+                                            }
+                                        }
+                                    ) {
+                                        Icon(
+                                            Icons.Filled.Notifications,
+                                            contentDescription
+                                        )
+                                    }
+                                }
+                                TooltipIconButton(
+                                    onClick = onSettingsClick,
+                                    tooltip = stringResource(R.string.settings),
+                                ) { contentDescription ->
+                                    BadgedBox(
+                                        badge = {
+                                            if (safeguardsToggled) {
+                                                Badge(
+                                                    modifier = Modifier.size(6.dp),
+                                                    containerColor = MaterialTheme.colorScheme.error
+                                                )
+                                            }
+                                        }
+                                    ) {
+                                        Icon(Icons.Filled.Settings, contentDescription)
+                                    }
+                                }
+                            },
+                            colors = TopAppBarDefaults.topAppBarColors(
+                                containerColor = Color.Transparent
+                            )
                         )
-                    )
+                    }
                 },
                 containerColor = Color.Transparent,
                 floatingActionButton = {
@@ -409,7 +437,7 @@ fun DashboardScreen(
                         onAddBundleClick = {
                             showAddBundleDialog = true
                         },
-                        showScrollToTop = showBackToTop,
+                        showScrollToTop = showBackToTop && !isTv,
                         onScrollToTop = {
                             composableScope.launch {
                                 currentScrollState.animateScrollToItem(0)
@@ -419,19 +447,21 @@ fun DashboardScreen(
                 }
             ) { paddingValues ->
                 Column(Modifier.padding(paddingValues)) {
-                    PillTabBar(
-                        pagerState = pagerState,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 8.dp)
-                    ) {
-                        DashboardPage.entries.forEachIndexed { index, page ->
-                            PillTab(
-                                index = index,
-                                onClick = { composableScope.launch { pagerState.animateScrollToPage(index) } },
-                                text = { Text(stringResource(page.titleResId)) },
-                                icon = { Icon(page.icon, null) }
-                            )
+                    if (!isTv) {
+                        PillTabBar(
+                            pagerState = pagerState,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp, vertical = 8.dp)
+                        ) {
+                            DashboardPage.entries.forEachIndexed { index, page ->
+                                PillTab(
+                                    index = index,
+                                    onClick = { composableScope.launch { pagerState.animateScrollToPage(index) } },
+                                    text = { Text(stringResource(page.titleResId)) },
+                                    icon = { Icon(page.icon, null) }
+                                )
+                            }
                         }
                     }
 
@@ -485,7 +515,7 @@ fun DashboardScreen(
 
                     HorizontalPager(
                         state = pagerState,
-                        userScrollEnabled = true,
+                        userScrollEnabled = !isTv,
                         modifier = Modifier.fillMaxSize()
                     ) { index ->
                         when (DashboardPage.entries[index]) {
@@ -660,4 +690,157 @@ fun Android11Dialog(onDismissRequest: () -> Unit, onContinue: () -> Unit) {
             Text(stringResource(R.string.android_11_bug_dialog_description))
         }
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TvNavigationRail(
+    pagerState: PagerState,
+    hasUpdate: Boolean,
+    unreadAnnouncement: Boolean,
+    onSettingsClick: () -> Unit,
+    onAnnouncementsClick: () -> Unit,
+    onUpdateClick: () -> Unit,
+    logoPainter: androidx.compose.ui.graphics.painter.Painter,
+    composableScope: kotlinx.coroutines.CoroutineScope
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxHeight()
+            .width(72.dp)
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .padding(vertical = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Logo at top
+        Image(
+            painter = logoPainter,
+            contentDescription = null,
+            modifier = Modifier.size(36.dp)
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Navigation Tabs (Apps, Patches)
+        DashboardPage.entries.forEachIndexed { index, page ->
+            val isSelected = pagerState.currentPage == index
+            val interactionSource = remember { MutableInteractionSource() }
+            val isFocused by interactionSource.collectIsFocusedAsState()
+
+            val backgroundColor = when {
+                isSelected -> MaterialTheme.colorScheme.primaryContainer
+                isFocused -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+                else -> Color.Transparent
+            }
+            val contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
+                              else MaterialTheme.colorScheme.onSurfaceVariant
+
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(backgroundColor)
+                    .clickable(
+                        interactionSource = interactionSource,
+                        indication = null,
+                        onClick = {
+                            composableScope.launch { pagerState.animateScrollToPage(index) }
+                        }
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = page.icon,
+                    contentDescription = stringResource(page.titleResId),
+                    tint = contentColor,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+
+        // Announcements Tab (if TV, show on rail)
+        val annInteractionSource = remember { MutableInteractionSource() }
+        val annFocused by annInteractionSource.collectIsFocusedAsState()
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(if (annFocused) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f) else Color.Transparent)
+                .clickable(
+                    interactionSource = annInteractionSource,
+                    indication = null,
+                    onClick = onAnnouncementsClick
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            BadgedBox(
+                badge = {
+                    if (unreadAnnouncement) {
+                        Badge(modifier = Modifier.size(6.dp))
+                    }
+                }
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Notifications,
+                    contentDescription = stringResource(R.string.announcements),
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+
+        // Update button (only visible on TV if update is available)
+        if (hasUpdate) {
+            val updateInteractionSource = remember { MutableInteractionSource() }
+            val updateFocused by updateInteractionSource.collectIsFocusedAsState()
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (updateFocused) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f) 
+                        else MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)
+                    )
+                    .clickable(
+                        interactionSource = updateInteractionSource,
+                        indication = null,
+                        onClick = onUpdateClick
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                BadgedBox(badge = { Badge(modifier = Modifier.size(6.dp)) }) {
+                    Icon(
+                        imageVector = Icons.Filled.Update,
+                        contentDescription = stringResource(R.string.update),
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        // Settings at bottom
+        val settingsInteractionSource = remember { MutableInteractionSource() }
+        val settingsFocused by settingsInteractionSource.collectIsFocusedAsState()
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(if (settingsFocused) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f) else Color.Transparent)
+                .clickable(
+                    interactionSource = settingsInteractionSource,
+                    indication = null,
+                    onClick = onSettingsClick
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Settings,
+                contentDescription = stringResource(R.string.settings),
+                modifier = Modifier.size(24.dp)
+            )
+        }
+    }
 }

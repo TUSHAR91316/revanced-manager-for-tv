@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -409,15 +410,22 @@ fun PatchesSelectorScreen(
                             .weight(1f)
                             .background(MaterialTheme.colorScheme.surface)
                     ) {
-                        LazyColumnWithScrollbar(
+                        Box(
                             modifier = Modifier.fillMaxSize(),
-                            state = searchLazyListState,
-                            contentPadding = PaddingValues(bottom = 16.dp)
+                            contentAlignment = Alignment.TopCenter
                         ) {
-                            sectionedPatchList(
-                                sections = searchSections,
-                                keyPrefix = "search"
-                            )
+                            LazyColumnWithScrollbar(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .widthIn(max = 640.dp),
+                                state = searchLazyListState,
+                                contentPadding = PaddingValues(bottom = 16.dp)
+                            ) {
+                                sectionedPatchList(
+                                    sections = searchSections,
+                                    keyPrefix = "search"
+                                )
+                            }
                         }
                     }
                 }
@@ -496,10 +504,13 @@ fun PatchesSelectorScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f)
+                    .weight(1f),
+                contentAlignment = Alignment.TopCenter
             ) {
                 LazyColumnWithScrollbar(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .widthIn(max = 640.dp),
                     state = patchLazyListState
                 ) {
                     sectionedPatchList(

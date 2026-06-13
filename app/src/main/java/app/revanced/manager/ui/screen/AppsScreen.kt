@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -195,23 +196,31 @@ fun AppsScreen(
                             LoadingIndicator()
                         }
                     } else {
-                        LazyColumnWithScrollbar(
-                            modifier = Modifier.fillMaxSize(), state = searchLazyListState
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.TopCenter
                         ) {
-                            appItems(
-                                items = buildAppList(
-                                    filteredPatchedApps, filteredPatchableApps, pinnedApps
-                                ),
-                                viewModel = viewModel,
-                                suggestedVersions = suggestedVersions,
-                                onPatchedClick = {
-                                    searchExpanded = false
-                                    viewModel.setFilterText(""); onAppClick(it)
-                                },
-                                onPatchableClick = {
-                                    searchExpanded = false
-                                    viewModel.setFilterText(""); onPatchableAppClick(it)
-                                })
+                            LazyColumnWithScrollbar(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .widthIn(max = 640.dp),
+                                state = searchLazyListState
+                            ) {
+                                appItems(
+                                    items = buildAppList(
+                                        filteredPatchedApps, filteredPatchableApps, pinnedApps
+                                    ),
+                                    viewModel = viewModel,
+                                    suggestedVersions = suggestedVersions,
+                                    onPatchedClick = {
+                                        searchExpanded = false
+                                        viewModel.setFilterText(""); onAppClick(it)
+                                    },
+                                    onPatchableClick = {
+                                        searchExpanded = false
+                                        viewModel.setFilterText(""); onPatchableAppClick(it)
+                                    })
+                            }
                         }
                     }
                 }
@@ -220,62 +229,69 @@ fun AppsScreen(
     }) { paddingValues ->
         if (searchExpanded) return@Scaffold
 
-        LazyColumnWithScrollbar(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = paddingValues.calculateTopPadding())
-                .padding(top = 8.dp),
-            state = lazyListState,
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top,
+                .padding(paddingValues),
+            contentAlignment = Alignment.TopCenter
         ) {
-            val patched = installedApps
-            val patchable = patchableApps
+            LazyColumnWithScrollbar(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .widthIn(max = 640.dp)
+                    .padding(top = 8.dp),
+                state = lazyListState,
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Top,
+            ) {
+                val patched = installedApps
+                val patchable = patchableApps
 
-            if (patched == null || patchable == null) {
-                item(key = "LOADING") {
-                    Box(
-                        modifier = Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center
-                    ) {
-                        LoadingIndicator()
+                if (patched == null || patchable == null) {
+                    item(key = "LOADING") {
+                        Box(
+                            modifier = Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center
+                        ) {
+                            LoadingIndicator()
+                        }
                     }
+                    return@LazyColumnWithScrollbar
                 }
-                return@LazyColumnWithScrollbar
-            }
 
-            val allPatchableApps = patchable.filter { it.packageName !in patchedPackageNames }
+                val allPatchableApps = patchable.filter { it.packageName !in patchedPackageNames }
 
-            item(key = "PATCHABLE_STORAGE") {
-                ListItem(
-                    modifier = Modifier.clickable {
-                        try {
-                            pickApkLauncher.launch(APK_MIMETYPE)
-                        } catch (_: ActivityNotFoundException) {
-                            context.toast(R.string.no_file_picker_found)
-                        }
-                    },
-                    leadingContent = {
-                        Box(Modifier.size(36.dp), Alignment.Center) {
-                            Icon(
-                                Icons.Default.Storage, null, modifier = Modifier.size(24.dp)
-                            )
-                        }
-                    },
-                    headlineContent = { Text(stringResource(R.string.select_from_storage)) },
-                    supportingContent = {
-                        Text(stringResource(R.string.select_from_storage_description))
-                    },
-                    colors = transparentListItemColors
+                item(key = "PATCHABLE_STORAGE") {
+                    ListItem(
+                        modifier = Modifier.clickable {
+                            try {
+                                pickApkLauncher.launch(APK_MIMETYPE)
+                            } catch (_: ActivityNotFoundException) {
+                                context.toast(R.string.no_file_picker_found)
+                            }
+                        },
+                        leadingContent = {
+                            Box(Modifier.size(36.dp), Alignment.Center) {
+                                Icon(
+                                    Icons.Default.Storage, null, modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        },
+                        headlineContent = { Text(stringResource(R.string.select_from_storage)) },
+                        supportingContent = {
+                            Text(stringResource(R.string.select_from_storage_description))
+                        },
+                        colors = transparentListItemColors
+                    )
+                }
+
+                appItems(
+                    items = buildAppList(patched, allPatchableApps, pinnedApps),
+                    viewModel = viewModel,
+                    suggestedVersions = suggestedVersions,
+                    onPatchedClick = onAppClick,
+                    onPatchableClick = onPatchableAppClick
                 )
             }
-
-            appItems(
-                items = buildAppList(patched, allPatchableApps, pinnedApps),
-                viewModel = viewModel,
-                suggestedVersions = suggestedVersions,
-                onPatchedClick = onAppClick,
-                onPatchableClick = onPatchableAppClick
-            )
         }
     }
 }
