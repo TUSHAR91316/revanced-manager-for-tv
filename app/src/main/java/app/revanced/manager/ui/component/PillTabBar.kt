@@ -5,7 +5,10 @@ import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -37,7 +40,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.Role
@@ -107,6 +109,20 @@ fun RowScope.PillTab(
     val isSelected = state.pagerState.currentPage == index
     val contentScale by animatePillTabScale(state.pressedTabIndex == index)
 
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val isFocused by interactionSource.collectIsFocusedAsState()
+
+    LaunchedEffect(isPressed) {
+        if (isPressed) {
+            state.onPressedTabIndexChange(index)
+        } else {
+            if (state.pressedTabIndex == index) {
+                state.onPressedTabIndexChange(-1)
+            }
+        }
+    }
+
     val hasComposed = remember { mutableStateOf(false) }
     LaunchedEffect(isSelected) {
         if (!hasComposed.value) {
@@ -122,6 +138,11 @@ fun RowScope.PillTab(
         modifier = modifier
             .weight(1f)
             .fillMaxHeight()
+            .clip(CircleShape)
+            .then(
+                if (isFocused) Modifier.background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
+                else Modifier
+            )
             .semantics {
                 role = Role.Tab
                 selected = isSelected
@@ -131,19 +152,11 @@ fun RowScope.PillTab(
                 scaleY = contentScale
                 transformOrigin = transformOriginForIndex(index, state.tabCount)
             }
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onPress = {
-                        state.onPressedTabIndexChange(index)
-                        try {
-                            awaitRelease()
-                        } finally {
-                            state.onPressedTabIndexChange(-1)
-                        }
-                    },
-                    onTap = { onClick() }
-                )
-            },
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            ),
         contentAlignment = Alignment.Center
     ) {
         PillTabContent(
