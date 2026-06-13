@@ -265,8 +265,10 @@ android {
             excludes += "/prebuilt/**/*"
         }
         jniLibs {
-            // 32-bit x86 is dead
-            excludes += "/lib/x86/*.so"
+            // 32-bit x86 is dead, but we keep it for debug builds to support local emulator testing
+            if (!gradle.startParameter.taskNames.any { it.contains("Debug", ignoreCase = true) }) {
+                excludes += "/lib/x86/*.so"
+            }
 
             // Equivalent of AndroidManifest's extractNativeLibs=true to ensure libs are compressed
             useLegacyPackaging = true
